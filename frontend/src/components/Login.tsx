@@ -17,11 +17,11 @@ export default function Login() {
                     <span className="text-base font-medium">ShopScout</span>
                 </div>
 
-                <div className="hidden md:block max-w-md mt-10">
+                <div className="hidden md:block max-w-md mt-8">
                     <p className="text-2xl font-medium text-white leading-snug">
                         Find what you need, without the hassle.
                     </p>
-                    <p className="mt-4 text-purple-100 leading-relaxed">
+                    <p className="mt-3 text-purple-100 leading-normal">
                         Discover products, explore stores, and save time with everything in one place.
                     </p>
                 </div>
@@ -33,7 +33,7 @@ export default function Login() {
 
             <div className="flex flex-1 items-center justify-center px-6 py-10 md:p-14">
                 <div className="w-full max-w-sm">
-                    <div className="flex mb-8 rounded-lg bg-gray-100 p-1">
+                    <div className="flex mb-6 rounded-lg bg-gray-100 p-1">
                         <button
                             onClick={() => setMode("signin")}
                             className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${
@@ -59,13 +59,13 @@ export default function Login() {
                     <h1 className="text-2xl font-semibold text-gray-900">
                         {isSignIn ? "Welcome back" : "Create your account"}
                     </h1>
-                    <p className="mt-1 mb-6 text-sm text-gray-500">
+                    <p className="mt-1 mb-5 text-sm text-gray-500">
                         {isSignIn
                             ? "Sign in to keep tracking the best deals."
                             : "It only takes a minute to get started."}
                     </p>
 
-                    <form className="space-y-4">
+                    <form className="space-y-3">
                         {!isSignIn && (
                             <div className="grid grid-cols-2 gap-3">
                                 <input
@@ -126,7 +126,7 @@ export default function Login() {
                         </button>
                     </form>
 
-                    <div className="flex items-center gap-3 my-6">
+                    <div className="flex items-center gap-3 my-5">
                         <div className="flex-1 h-px bg-gray-200" />
                         <span className="text-xs text-gray-400">or</span>
                         <div className="flex-1 h-px bg-gray-200" />
