@@ -1,6 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import { useState, useEffect, useRef } from "react";
 import {
     Search, X, Star, Navigation2, Heart, MessageSquare,
@@ -29,6 +29,8 @@ interface Shop {
 
 type AuthState = "guest" | "user" | null;
 type AuthMode = "signin" | "signup";
+
+type LatLng = [number, number];
 
 const SHOPS: Shop[] = [
     {
@@ -84,6 +86,16 @@ function makeIcon(active: boolean) {
     });
 }
 
+function FitBounds({ points }: { points: LatLng[] }) {
+    const map = useMap();
+    useEffect(() => {
+        if (points.length >= 2) {
+            map.fitBounds(L.latLngBounds(points), { padding: [80, 80] });
+        }
+    }, [map, points]);
+    return null;
+}
+
 function LocateControl({ onLocate }: { onLocate: (lat: number, lng: number) => void }) {
     const map = useMap();
 
@@ -123,12 +135,14 @@ interface ShopCardProps {
     shop: Shop;
     isGuest: boolean;
     saved: boolean;
+    hasUserPos: boolean;
+    onDirections: () => void;
     onToggleSave: (id: number) => void;
     onFeedback: () => void;
     onClose: () => void;
 }
 
-function ShopCard({ shop, isGuest, saved, onToggleSave, onFeedback, onClose }: ShopCardProps) {
+function ShopCard({ shop, isGuest, saved, hasUserPos, onDirections, onToggleSave, onFeedback, onClose }: ShopCardProps) {
     return (
         <div
             style={{ zIndex: 950 }}
@@ -154,7 +168,15 @@ function ShopCard({ shop, isGuest, saved, onToggleSave, onFeedback, onClose }: S
             </div>
 
             <div className="mt-3 flex gap-2">
-                <button className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#161A23] py-2 text-xs font-medium text-white hover:bg-black">
+                <button
+                    onClick={onDirections}
+                    disabled={!hasUserPos}
+                    title={!hasUserPos ? "Allow location to get directions" : ""}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium transition-colors ${hasUserPos
+                        ? "bg-[#161A23] text-white hover:bg-black"
+                        : "cursor-not-allowed bg-[#E4E7EC] text-[#9CA3AF]"
+                        }`}
+                >
                     <Navigation2 size={13} /> Directions
                 </button>
                 <button
@@ -206,7 +228,7 @@ function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
         >
             <div
                 onClick={(e) => e.stopPropagation()}
-                className="flex h-full w-full max-w-sm flex-col bg-white px-8 py-8 shadow-2xl"
+                className="flex h-full w-full max-w-sm flex-col bg-white px-8 py-8 shadow-2xl text-left [word-spacing:normal]"
             >
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -312,7 +334,7 @@ function MapMarkers({ shops, selected, onSelect }: MapMarkersProps) {
     );
 }
 
-const CEBU_CENTER: [number, number] = [10.3157, 123.8854];
+const CEBU_CENTER: LatLng = [10.3157, 123.8854];
 
 export default function ShopScoutMap() {
     const [query, setQuery] = useState("");
@@ -321,11 +343,11 @@ export default function ShopScoutMap() {
     const [selected, setSelected] = useState<number | null>(null);
     const [saved, setSaved] = useState<Set<number>>(new Set());
     const [toast, setToast] = useState("");
-    const [userPos, setUserPos] = useState<[number, number] | null>(null);
+    const [userPos, setUserPos] = useState<LatLng | null>(null);
+    const [route, setRoute] = useState<LatLng[] | null>(null);
     const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const isGuest = auth === "guest";
-
     const hasQuery = query.trim().length > 0;
 
     const filtered = hasQuery
@@ -334,6 +356,15 @@ export default function ShopScoutMap() {
             return s.name.toLowerCase().includes(q) || s.brand.toLowerCase().includes(q);
         })
         : [];
+
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => setUserPos([pos.coords.latitude, pos.coords.longitude]),
+                () => {}
+            );
+        }
+    }, []);
 
     function flashToast(msg: string) {
         setToast(msg);
@@ -358,6 +389,12 @@ export default function ShopScoutMap() {
         }
     }
 
+    function handleDirections(shop: Shop) {
+        if (!userPos) return;
+        const shopPos: LatLng = [shop.lat, shop.lng];
+        setRoute([userPos, shopPos]);
+    }
+
     const selectedShop = filtered.find((s) => s.id === selected) ?? null;
 
     return (
@@ -377,13 +414,14 @@ export default function ShopScoutMap() {
                         onChange={(e) => {
                             setQuery(e.target.value);
                             setSelected(null);
+                            setRoute(null);
                         }}
                         placeholder="Search shoes, brands, or stores nearby"
                         className="h-11 w-full rounded-xl border border-[#E4E7EC] bg-white pl-10 pr-4 text-sm text-[#161A23] shadow-sm placeholder:text-[#9CA3AF] focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E2542D]"
                     />
                     {query && (
                         <button
-                            onClick={() => { setQuery(""); setSelected(null); }}
+                            onClick={() => { setQuery(""); setSelected(null); setRoute(null); }}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#5B6472]"
                         >
                             <X size={15} />
@@ -429,7 +467,22 @@ export default function ShopScoutMap() {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
-                <MapMarkers shops={filtered} selected={selected} onSelect={setSelected} />
+                <MapMarkers shops={filtered} selected={selected} onSelect={(id) => { setSelected(id); setRoute(null); }} />
+
+                {route && (
+                    <>
+                        <Polyline
+                            positions={route}
+                            pathOptions={{
+                                color: "#E2542D",
+                                weight: 4,
+                                opacity: 0.9,
+                                dashArray: "10, 8",
+                            }}
+                        />
+                        <FitBounds points={route} />
+                    </>
+                )}
 
                 {userPos && (
                     <Marker
@@ -473,9 +526,11 @@ export default function ShopScoutMap() {
                     shop={selectedShop}
                     isGuest={isGuest}
                     saved={saved.has(selectedShop.id)}
+                    hasUserPos={userPos !== null}
+                    onDirections={() => handleDirections(selectedShop)}
                     onToggleSave={handleToggleSave}
                     onFeedback={handleFeedback}
-                    onClose={() => setSelected(null)}
+                    onClose={() => { setSelected(null); setRoute(null); }}
                 />
             )}
 
