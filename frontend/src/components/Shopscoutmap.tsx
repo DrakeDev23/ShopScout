@@ -206,7 +206,7 @@ function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
         >
             <div
                 onClick={(e) => e.stopPropagation()}
-                className="flex h-full w-full max-w-sm flex-col bg-white p-6 shadow-2xl"
+                className="flex h-full w-full max-w-sm flex-col bg-white px-8 py-8 shadow-2xl"
             >
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -220,7 +220,7 @@ function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                     <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#5B6472]"><X size={18} /></button>
                 </div>
 
-                <div className="mt-6 flex rounded-lg bg-[#F1F2F4] p-1">
+                <div className="mt-8 flex rounded-lg bg-[#F1F2F4] p-1">
                     {(["signin", "signup"] as AuthMode[]).map((m) => (
                         <button
                             key={m}
@@ -232,14 +232,14 @@ function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                     ))}
                 </div>
 
-                <h1 className="mt-6 text-xl font-semibold text-[#161A23]">
+                <h1 className="mt-8 text-2xl font-semibold text-[#161A23]">
                     {isSignIn ? "Welcome back" : "Create your account"}
                 </h1>
-                <p className="mt-1 text-sm text-[#5B6472]">
+                <p className="mt-2 text-sm leading-relaxed text-[#5B6472]">
                     {isSignIn ? "Save shops and pick up your search history." : "Get a saved list and search history that follows you."}
                 </p>
 
-                <form onSubmit={(e) => { e.preventDefault(); onAuth(); }} className="mt-5 space-y-3">
+                <form onSubmit={(e) => { e.preventDefault(); onAuth(); }} className="mt-6 space-y-4">
                     {!isSignIn && (
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" size={16} />
@@ -317,7 +317,7 @@ const CEBU_CENTER: [number, number] = [10.3157, 123.8854];
 export default function ShopScoutMap() {
     const [query, setQuery] = useState("");
     const [auth, setAuth] = useState<AuthState>(null);
-    const [panelOpen, setPanelOpen] = useState(false);
+    const [panelOpen, setPanelOpen] = useState(true);
     const [selected, setSelected] = useState<number | null>(null);
     const [saved, setSaved] = useState<Set<number>>(new Set());
     const [toast, setToast] = useState("");
