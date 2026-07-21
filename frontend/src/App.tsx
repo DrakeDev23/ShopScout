@@ -1,9 +1,9 @@
-import Login from "./components/Login";
+import ShopScoutMap from "./components/Shopscoutmap";
 
 export default function App() {
   return (
     <>
-      <Login />
+      <ShopScoutMap />
     </>
   );
 }
