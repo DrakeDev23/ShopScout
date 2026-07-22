@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Mail, Lock, Eye, EyeOff, User, Footprints } from "lucide-react";
+import { X, Mail, Lock, Eye, EyeOff, User, Footprints, Store } from "lucide-react";
 import type { AuthMode } from "./types";
 
 interface AuthPanelProps {
@@ -8,10 +8,21 @@ interface AuthPanelProps {
     onAuth: () => void;
 }
 
+type UserType = "customer" | "store";
+type View = "welcome" | "form";
+
 export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
+    const [view, setView] = useState<View>("welcome");
     const [mode, setMode] = useState<AuthMode>("signin");
+    const [userType, setUserType] = useState<UserType>("customer");
     const [showPassword, setShowPassword] = useState(false);
     const isSignIn = mode === "signin";
+
+    const goToForm = (type: UserType) => {
+        setUserType(type);
+        setMode("signin");
+        setView("form");
+    };
 
     return (
         <div
@@ -35,67 +46,116 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                     <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#5B6472]"><X size={18} /></button>
                 </div>
 
-                <div className="mt-8 flex rounded-lg bg-[#F1F2F4] p-1">
-                    {(["signin", "signup"] as AuthMode[]).map((m) => (
-                        <button
-                            key={m}
-                            onClick={() => setMode(m)}
-                            className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${mode === m ? "bg-white text-[#161A23] shadow-sm" : "text-[#8B8F98]"}`}
-                        >
-                            {m === "signin" ? "Sign in" : "Sign up"}
-                        </button>
-                    ))}
-                </div>
+                {view === "welcome" ? (
+                    <div className="flex flex-1 flex-col">
+                        <h1 className="mt-8 text-2xl font-semibold text-[#161A23]">
+                            Welcome to ShopScout
+                        </h1>
+                        <p className="mt-2 text-sm leading-relaxed text-[#5B6472]">
+                            Find, compare, and save shops in seconds.
+                        </p>
 
-                <h1 className="mt-8 text-2xl font-semibold text-[#161A23]">
-                    {isSignIn ? "Welcome back" : "Create your account"}
-                </h1>
-                <p className="mt-2 text-sm leading-relaxed text-[#5B6472]">
-                    {isSignIn ? "Save shops and pick up your search history." : "Get a saved list and search history that follows you."}
-                </p>
-
-                <form onSubmit={(e) => { e.preventDefault(); onAuth(); }} className="mt-6 space-y-4">
-                    {!isSignIn && (
-                        <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" size={16} />
-                            <input type="text" placeholder="Full name" className="w-full rounded-lg border border-[#D7DCE3] py-2.5 pl-9 pr-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E2542D]" />
+                        <div className="mt-8 flex flex-col gap-3">
+                            <button
+                                onClick={onGuest}
+                                className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-[#D7DCE3] py-2.5 text-sm font-medium text-[#5B6472] hover:bg-[#F7F8FA]"
+                            >
+                                Continue as Guest
+                            </button>
+                            <p className="text-center text-[11px] text-[#9CA3AF]">
+                                Guests can share results, but can't save shops, leave feedback, or keep search history.
+                            </p>
                         </div>
-                    )}
-                    <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" size={16} />
-                        <input type="email" placeholder="Email" className="w-full rounded-lg border border-[#D7DCE3] py-2.5 pl-9 pr-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E2542D]" />
+
+                        <div className="my-6 flex items-center gap-3">
+                            <div className="h-px flex-1 bg-[#E4E7EC]" />
+                            <span className="text-xs text-[#9CA3AF]">OR</span>
+                            <div className="h-px flex-1 bg-[#E4E7EC]" />
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => goToForm("customer")}
+                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#E2542D] py-2.5 text-sm font-medium text-white hover:bg-[#c4471f]"
+                            >
+                                <User size={16} />
+                                Sign in as Customer
+                            </button>
+                            <button
+                                onClick={() => goToForm("store")}
+                                className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#D7DCE3] py-2.5 text-sm font-medium text-[#161A23] hover:bg-[#F7F8FA]"
+                            >
+                                <Store size={16} />
+                                Sign in as Store Owner
+                            </button>
+                        </div>
                     </div>
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" size={16} />
-                        <input
-                            type={showPassword ? "text" : "password"}
-                            placeholder="Password"
-                            className="w-full rounded-lg border border-[#D7DCE3] py-2.5 pl-9 pr-9 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E2542D]"
-                        />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
-                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                ) : (
+                    <>
+                        <button
+                            onClick={() => setView("welcome")}
+                            className="mt-6 self-start text-xs font-medium text-[#5B6472] hover:text-[#161A23]"
+                        >
+                            &larr; Back
                         </button>
-                    </div>
-                    <button type="submit" className="w-full rounded-lg bg-[#E2542D] py-2.5 text-sm font-medium text-white hover:bg-[#c4471f]">
-                        {isSignIn ? "Sign in" : "Create account"}
-                    </button>
-                </form>
 
-                <div className="my-5 flex items-center gap-3">
-                    <div className="h-px flex-1 bg-[#E4E7EC]" />
-                    <span className="text-xs text-[#9CA3AF]">or</span>
-                    <div className="h-px flex-1 bg-[#E4E7EC]" />
-                </div>
+                        <div className="mt-4 flex rounded-lg bg-[#F1F2F4] p-1">
+                            {(["signin", "signup"] as AuthMode[]).map((m) => (
+                                <button
+                                    key={m}
+                                    onClick={() => setMode(m)}
+                                    className={`flex-1 rounded-md py-2 text-sm font-medium transition-colors ${mode === m ? "bg-white text-[#161A23] shadow-sm" : "text-[#8B8F98]"}`}
+                                >
+                                    {m === "signin" ? "Sign in" : "Sign up"}
+                                </button>
+                            ))}
+                        </div>
 
-                <button
-                    onClick={onGuest}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-[#D7DCE3] py-2.5 text-sm font-medium text-[#5B6472] hover:bg-[#F7F8FA]"
-                >
-                    Continue as guest
-                </button>
-                <p className="mt-2 text-center text-[11px] text-[#9CA3AF]">
-                    Guests can share results, but can't save shops, leave feedback, or keep search history.
-                </p>
+                        <h1 className="mt-8 text-2xl font-semibold text-[#161A23]">
+                            {isSignIn ? "Welcome back" : "Create your account"}
+                        </h1>
+                        <p className="mt-2 text-sm leading-relaxed text-[#5B6472]">
+                            {userType === "customer"
+                                ? isSignIn
+                                    ? "Save shops and pick up your search history."
+                                    : "Get a saved list and search history that follows you."
+                                : isSignIn
+                                    ? "Manage your store profile and offers."
+                                    : "Set up your store profile to start listing offers."}
+                        </p>
+
+                        <form onSubmit={(e) => { e.preventDefault(); onAuth(); }} className="mt-6 space-y-4">
+                            {!isSignIn && (
+                                <div className="relative">
+                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" size={16} />
+                                    <input
+                                        type="text"
+                                        placeholder={userType === "customer" ? "Full name" : "Store name"}
+                                        className="w-full rounded-lg border border-[#D7DCE3] py-2.5 pl-9 pr-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E2542D]"
+                                    />
+                                </div>
+                            )}
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" size={16} />
+                                <input type="email" placeholder="Email" className="w-full rounded-lg border border-[#D7DCE3] py-2.5 pl-9 pr-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E2542D]" />
+                            </div>
+                            <div className="relative">
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" size={16} />
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Password"
+                                    className="w-full rounded-lg border border-[#D7DCE3] py-2.5 pl-9 pr-9 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E2542D]"
+                                />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
+                            <button type="submit" className="w-full rounded-lg bg-[#E2542D] py-2.5 text-sm font-medium text-white hover:bg-[#c4471f]">
+                                {isSignIn ? "Sign in" : "Create account"}
+                            </button>
+                        </form>
+                    </>
+                )}
             </div>
         </div>
     );
