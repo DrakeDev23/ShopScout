@@ -41,7 +41,7 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    email: email || (userType === "store" ? "owner@shopscout.app" : "alex.m@shopscout.app"),
+                    email: email || (userType === "store" ? "owner@shopscout.app" : "drake.delosreyes@shopscout.app"),
                     password: password || "password123",
                     user_type: userType,
                 }),

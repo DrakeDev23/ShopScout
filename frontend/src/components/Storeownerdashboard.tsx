@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, BarChart3, Footprints, Package, Store } from "lucide-react";
+import { AlertTriangle, BarChart3, Footprints, Package, Store, LogOut } from "lucide-react";
 import { NavItem } from "./dashboard/NavItems";
 import { ProductModal } from "./dashboard/ProductModal";
 import { ProductsTab } from "./dashboard/ProductsTab";
@@ -15,7 +15,11 @@ import {
 import type { Product, StoreProfile, Tab } from "./dashboard/types";
 import { isProductLowStock, isProductOutOfStock } from "./dashboard/utils";
 
-export default function StoreOwnerDashboard() {
+interface StoreOwnerDashboardProps {
+    onLogout?: () => void;
+}
+
+export default function StoreOwnerDashboard({ onLogout }: StoreOwnerDashboardProps = {}) {
     const [tab, setTab] = useState<Tab>("products");
     const [profile, setProfile] = useState<StoreProfile>(initialProfile);
     const [draftProfile, setDraftProfile] = useState<StoreProfile>(initialProfile);
@@ -120,7 +124,7 @@ export default function StoreOwnerDashboard() {
     };
 
     return (
-        <div className="flex h-full min-h-[640px] w-full bg-[#F7F8FA] text-[#161A23] [word-spacing:normal]">
+        <div className="flex h-full w-full bg-[#F7F8FA] text-[#161A23] [word-spacing:normal]">
             <aside className="flex w-60 shrink-0 flex-col border-r border-[#E4E7EC] bg-white px-4 py-6">
                 <div className="flex items-center gap-2 px-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#161A23]">
@@ -157,9 +161,27 @@ export default function StoreOwnerDashboard() {
                     />
                 </nav>
 
-                <div className="mt-auto rounded-lg bg-[#F1F2F4] p-3">
-                    <p className="text-xs font-medium text-[#161A23]">{profile.name}</p>
-                    <p className="mt-0.5 text-[11px] text-[#9CA3AF]">{profile.category}</p>
+                <div className="mt-auto flex flex-col gap-2 rounded-lg bg-[#F1F2F4] p-3">
+                    <div className="flex items-center gap-3">
+                        <img
+                            src="/drake-profile.jpg"
+                            alt={profile.name}
+                            className="h-9 w-9 rounded-full object-cover ring-2 ring-white"
+                        />
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-medium text-[#161A23]">{profile.name}</p>
+                            <p className="truncate text-[11px] text-[#9CA3AF]">{profile.category}</p>
+                        </div>
+                    </div>
+                    {onLogout && (
+                        <button
+                            onClick={onLogout}
+                            className="mt-1 flex w-full items-center justify-center gap-2 rounded-md border border-[#D7DCE3] bg-white py-1.5 text-xs font-semibold text-[#EF4444] transition-colors hover:bg-[#FDEEEA]"
+                        >
+                            <LogOut size={14} />
+                            <span>Log Out</span>
+                        </button>
+                    )}
                 </div>
             </aside>
 

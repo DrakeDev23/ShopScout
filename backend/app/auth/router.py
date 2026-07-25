@@ -21,7 +21,7 @@ def login(request: LoginRequest):
         user_type="customer",
         redirect_target="customer",
         user=UserProfile(
-            name="Alex Morgan",
+            name="Drake Delos Reyes",
             email=request.email,
             role="customer"
         )

@@ -16,7 +16,11 @@ import { LikedStoresTab } from "./liked-stores/LikedStoresTab";
 import { SharedItemsTab } from "./shared-items/SharedItemsTab";
 import { ShareModal } from "./share-modal/ShareModal";
 
-export default function CustomerDashboard() {
+interface CustomerDashboardProps {
+  onLogout?: () => void;
+}
+
+export default function CustomerDashboard({ onLogout }: CustomerDashboardProps = {}) {
   const [currentTab, setCurrentTab] = useState<CustomerTab>("liked");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -84,6 +88,7 @@ export default function CustomerDashboard() {
         likedCount={likedStores.length}
         sharedCount={sharedItems.length}
         profile={profile}
+        onLogout={onLogout}
       />
 
       <div className="flex flex-1 flex-col overflow-hidden">

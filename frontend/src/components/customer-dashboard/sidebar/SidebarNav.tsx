@@ -1,4 +1,4 @@
-import { Footprints, Heart, Share2, BarChart3, UserCheck } from "lucide-react";
+import { Footprints, Heart, Share2, BarChart3, UserCheck, LogOut } from "lucide-react";
 import type { CustomerTab, CustomerProfile } from "../types/types";
 
 interface SidebarNavProps {
@@ -7,6 +7,7 @@ interface SidebarNavProps {
   likedCount: number;
   sharedCount: number;
   profile: CustomerProfile;
+  onLogout?: () => void;
 }
 
 export function SidebarNav({
@@ -15,6 +16,7 @@ export function SidebarNav({
   likedCount,
   sharedCount,
   profile,
+  onLogout,
 }: SidebarNavProps) {
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-[#E4E7EC] bg-white px-5 py-6">
@@ -95,7 +97,7 @@ export function SidebarNav({
         </button>
       </nav>
 
-      <div className="mt-auto rounded-xl border border-[#E4E7EC] bg-[#F7F8FA] p-3.5">
+      <div className="mt-auto flex flex-col gap-2 rounded-xl border border-[#E4E7EC] bg-[#F7F8FA] p-3.5">
         <div className="flex items-center gap-3">
           <img
             src={profile.avatarUrl}
@@ -110,6 +112,16 @@ export function SidebarNav({
             <p className="truncate text-[11px] text-[#9CA3AF]">{profile.email}</p>
           </div>
         </div>
+
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-[#E4E7EC] bg-white py-2 text-xs font-semibold text-[#EF4444] transition-colors hover:bg-[#FDEEEA]"
+          >
+            <LogOut size={14} />
+            <span>Log Out</span>
+          </button>
+        )}
       </div>
     </aside>
   );
