@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { X, Mail, Lock, Eye, EyeOff, User, Footprints, Store } from "lucide-react";
+import { X, Mail, Lock, Eye, EyeOff, User, Footprints, Store, Loader2 } from "lucide-react";
 import type { AuthMode } from "./types";
 
 interface AuthPanelProps {
     onClose: () => void;
     onGuest: () => void;
-    onAuth: () => void;
+    onAuth: (targetView: "customer" | "owner") => void;
 }
 
 type UserType = "customer" | "store";
@@ -15,13 +15,50 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
     const [view, setView] = useState<View>("welcome");
     const [mode, setMode] = useState<AuthMode>("signin");
     const [userType, setUserType] = useState<UserType>("customer");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [name, setName] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
     const isSignIn = mode === "signin";
 
     const goToForm = (type: UserType) => {
         setUserType(type);
         setMode("signin");
         setView("form");
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+
+        const targetRedirect = userType === "store" ? "owner" : "customer";
+
+        try {
+            const response = await fetch("http://localhost:8000/api/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    email: email || (userType === "store" ? "owner@shopscout.app" : "alex.m@shopscout.app"),
+                    password: password || "password123",
+                    user_type: userType,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const target = data.redirect_target === "owner" ? "owner" : "customer";
+                onAuth(target);
+            } else {
+                onAuth(targetRedirect);
+            }
+        } catch {
+            onAuth(targetRedirect);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -124,12 +161,14 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                                     : "Set up your store profile to start listing offers."}
                         </p>
 
-                        <form onSubmit={(e) => { e.preventDefault(); onAuth(); }} className="mt-6 space-y-4">
+                        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                             {!isSignIn && (
                                 <div className="relative">
                                     <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" size={16} />
                                     <input
                                         type="text"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
                                         placeholder={userType === "customer" ? "Full name" : "Store name"}
                                         className="w-full rounded-lg border border-[#D7DCE3] py-2.5 pl-9 pr-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E2542D]"
                                     />
@@ -137,12 +176,20 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                             )}
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" size={16} />
-                                <input type="email" placeholder="Email" className="w-full rounded-lg border border-[#D7DCE3] py-2.5 pl-9 pr-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E2542D]" />
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Email"
+                                    className="w-full rounded-lg border border-[#D7DCE3] py-2.5 pl-9 pr-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E2542D]"
+                                />
                             </div>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" size={16} />
                                 <input
                                     type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Password"
                                     className="w-full rounded-lg border border-[#D7DCE3] py-2.5 pl-9 pr-9 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E2542D]"
                                 />
@@ -150,8 +197,12 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                 </button>
                             </div>
-                            <button type="submit" className="w-full rounded-lg bg-[#E2542D] py-2.5 text-sm font-medium text-white hover:bg-[#c4471f]">
-                                {isSignIn ? "Sign in" : "Create account"}
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#E2542D] py-2.5 text-sm font-medium text-white hover:bg-[#c4471f] disabled:opacity-50"
+                            >
+                                {loading ? <Loader2 size={16} className="animate-spin" /> : isSignIn ? "Sign in" : "Create account"}
                             </button>
                         </form>
                     </>

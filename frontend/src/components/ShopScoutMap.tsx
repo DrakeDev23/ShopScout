@@ -11,7 +11,11 @@ import { FitBounds, LocateControl } from "./MapHelpers";
 import { ShopCard } from "./ShopCard";
 import { AuthPanel } from "./login";
 
-export default function ShopScoutMap() {
+interface ShopScoutMapProps {
+    onSelectView?: (view: "customer" | "owner") => void;
+}
+
+export default function ShopScoutMap({ onSelectView }: ShopScoutMapProps = {}) {
     const [query, setQuery] = useState("");
     const [auth, setAuth] = useState<AuthState>(null);
     const [panelOpen, setPanelOpen] = useState(true);
@@ -213,7 +217,13 @@ export default function ShopScoutMap() {
                 <AuthPanel
                     onClose={() => setPanelOpen(false)}
                     onGuest={() => { setAuth("guest"); setPanelOpen(false); }}
-                    onAuth={() => { setAuth("user"); setPanelOpen(false); }}
+                    onAuth={(target) => {
+                        setAuth("user");
+                        setPanelOpen(false);
+                        if (onSelectView) {
+                            onSelectView(target);
+                        }
+                    }}
                 />
             )}
         </div>
