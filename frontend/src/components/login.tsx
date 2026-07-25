@@ -112,7 +112,7 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                         </div>
 
                         <h1 className="mt-8 text-2xl font-semibold text-[#161A23]">
-                            {isSignIn ? "Welcome back" : "Create your account"}
+                            {isSignIn ? "Welcome to ShopScout" : "Create your account"}
                         </h1>
                         <p className="mt-2 text-sm leading-relaxed text-[#5B6472]">
                             {userType === "customer"

@@ -9,7 +9,7 @@ export const initialProducts: Product[] = [
 ];
 
 export const initialProfile: StoreProfile = {
-    name: "Northbound Supply Co.",
+    name: "drake test.",
     category: "Outdoor & Apparel",
     description: "Everyday gear for people who'd rather be outside. Family-run since 2014.",
     address: "412 Alder St, Portland, OR",
