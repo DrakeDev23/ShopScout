@@ -8,9 +8,16 @@ import type { Shop, LatLng } from "./types";
 import { SHOPS, CEBU_CENTER } from "./data";
 import { MapMarkers } from "./MapMarkers";
 import { FitBounds, LocateControl } from "./MapHelpers";
-import { ShopCard } from "./ShopCard";
 import { AuthPanel } from "./login";
+import { ShopCard } from "./ShopCard";
 import { useAuth } from "../context/AuthContext";
+
+const USER_LOCATION_ICON = L.divIcon({
+    className: "",
+    html: `<div style="width:16px;height:16px;border-radius:50%;background:#4285F4;border:3px solid white;box-shadow:0 0 0 3px rgba(66,133,244,0.35);"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+});
 
 interface ShopScoutMapProps {
     onSelectView?: (view: "customer" | "owner") => void;
@@ -48,7 +55,7 @@ export default function ShopScoutMap({ onSelectView }: ShopScoutMapProps = {}) {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => setUserPos([pos.coords.latitude, pos.coords.longitude]),
-                () => {}
+                () => { }
             );
         }
     }, []);
@@ -87,7 +94,7 @@ export default function ShopScoutMap({ onSelectView }: ShopScoutMapProps = {}) {
     return (
         <div className="relative h-screen w-full overflow-hidden font-sans">
             <div
-                style={{ zIndex: 1000 }}
+                style={{ zIndex: 2000 }}
                 className="absolute left-0 right-0 top-0 flex items-center gap-3 p-3 md:p-4"
             >
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#161A23] shadow-md">
@@ -129,7 +136,7 @@ export default function ShopScoutMap({ onSelectView }: ShopScoutMapProps = {}) {
                         ) : (
                             <>
                                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#EAF6F3] text-[11px] font-medium text-[#158F76]">
-                                  {user?.name ? user.name.split(" ").map(n => n[0]).join("") : "JD"}
+                                    {user?.name ? user.name.split(" ").map(n => n[0]).join("") : "JD"}
                                 </div>
                                 <LogOut size={14} className="text-[#9CA3AF]" />
                             </>
@@ -137,8 +144,12 @@ export default function ShopScoutMap({ onSelectView }: ShopScoutMapProps = {}) {
                     </button>
                 ) : (
                     <button
-                        onClick={() => setPanelOpen(true)}
-                        className="h-11 shrink-0 rounded-xl bg-[#161A23] px-4 text-sm font-medium text-white shadow-sm hover:bg-black"
+                        type="button"
+                        onClick={() => {
+                            console.log("[ShopScoutMap] Log in clicked, panelOpen -> true");
+                            setPanelOpen(true);
+                        }}
+                        className="relative h-11 shrink-0 rounded-xl bg-[#161A23] px-4 text-sm font-medium text-white shadow-sm hover:bg-black"
                     >
                         Log in
                     </button>
@@ -176,12 +187,7 @@ export default function ShopScoutMap({ onSelectView }: ShopScoutMapProps = {}) {
                 {userPos && (
                     <Marker
                         position={userPos}
-                        icon={L.divIcon({
-                            className: "",
-                            html: `<div style="width:16px;height:16px;border-radius:50%;background:#4285F4;border:3px solid white;box-shadow:0 0 0 3px rgba(66,133,244,0.35);"></div>`,
-                            iconSize: [16, 16],
-                            iconAnchor: [8, 8],
-                        })}
+                        icon={USER_LOCATION_ICON}
                     />
                 )}
 
