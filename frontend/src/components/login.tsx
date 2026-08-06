@@ -28,9 +28,6 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
     const [errorMsg, setErrorMsg] = useState("");
     const isSignIn = mode === "signin";
 
-    // Animation state: starts false, flips true right after mount so the
-    // transition actually plays. isClosing drives the reverse animation
-    // before we tell the parent to unmount us.
     const [isVisible, setIsVisible] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
 
