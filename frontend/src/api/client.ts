@@ -35,7 +35,6 @@ export async function apiClient<T>(
         errorMessage = errData.message;
       }
     } catch {
-      // Ignore JSON parse error on non-ok response
     }
     const error: ApiError = new Error(errorMessage) as ApiError;
     error.status = response.status;
