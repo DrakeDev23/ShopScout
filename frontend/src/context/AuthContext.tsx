@@ -70,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await authApi.login(payload);
       const targetView: AppView = res.redirect_target === "owner" ? "owner" : "customer";
-      
+
       setUser(res.user);
       setRole(targetView === "owner" ? "owner" : "customer");
       if (res.token) {
@@ -81,7 +81,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setView(targetView);
       return targetView;
     } catch (err) {
-      // Fallback local auth mock if backend API server is offline
       const targetView: AppView = payload.user_type === "store" ? "owner" : "customer";
       const fallbackUser: UserProfileData = {
         name: payload.user_type === "store" ? "Store Owner" : "Drake Delos Reyes",
