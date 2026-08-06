@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Mail, Lock, Eye, EyeOff, User, Footprints, Store, Loader2 } from "lucide-react";
 import type { AuthMode } from "./types";
 import { useAuth } from "../context/AuthContext";
@@ -13,6 +13,8 @@ interface AuthPanelProps {
 type UserType = "customer" | "store";
 type View = "welcome" | "form";
 
+const TRANSITION_MS = 250;
+
 export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
     const { login, setGuestMode } = useAuth();
     const [view, setView] = useState<View>("welcome");
@@ -26,6 +28,23 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
     const [errorMsg, setErrorMsg] = useState("");
     const isSignIn = mode === "signin";
 
+    // Animation state: starts false, flips true right after mount so the
+    // transition actually plays. isClosing drives the reverse animation
+    // before we tell the parent to unmount us.
+    const [isVisible, setIsVisible] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
+
+    useEffect(() => {
+        const raf = requestAnimationFrame(() => setIsVisible(true));
+        return () => cancelAnimationFrame(raf);
+    }, []);
+
+    const handleClose = () => {
+        setIsClosing(true);
+        setIsVisible(false);
+        setTimeout(onClose, TRANSITION_MS);
+    };
+
     const goToForm = (type: UserType) => {
         setUserType(type);
         setMode("signin");
@@ -35,6 +54,7 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
 
     const handleGuestClick = () => {
         setGuestMode();
+        handleClose();
         onGuest();
     };
 
@@ -62,10 +82,11 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
 
     return (
         <div
-            className="fixed inset-0 z-2100 flex justify-end bg-black/30 pointer-events-auto"
+            className={`fixed inset-0 z-[2100] flex justify-end bg-black/30 pointer-events-auto transition-opacity duration-250 ease-out ${isVisible && !isClosing ? "opacity-100" : "opacity-0"
+                }`}
             onClick={(e) => {
                 e.stopPropagation();
-                onClose();
+                handleClose();
             }}
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
@@ -74,7 +95,8 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                 onClick={(e) => e.stopPropagation()}
                 onMouseDown={(e) => e.stopPropagation()}
                 onPointerDown={(e) => e.stopPropagation()}
-                className="flex h-full w-full max-w-sm flex-col bg-white px-8 py-8 shadow-2xl text-left [word-spacing:normal]"
+                className={`flex h-full w-full max-w-sm flex-col bg-white px-8 py-8 shadow-2xl text-left [word-spacing:normal] transition-transform duration-250 ease-out ${isVisible && !isClosing ? "translate-x-0" : "translate-x-full"
+                    }`}
             >
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -85,7 +107,7 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                             ShopScout
                         </span>
                     </div>
-                    <button onClick={onClose} className="text-[#9CA3AF] hover:text-[#5B6472]"><X size={18} /></button>
+                    <button onClick={handleClose} className="text-[#9CA3AF] hover:text-[#5B6472]"><X size={18} /></button>
                 </div>
 
                 {view === "welcome" ? (
