@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { X, Mail, Lock, Eye, EyeOff, User, Footprints, Store, Loader2 } from "lucide-react";
 import type { AuthMode } from "./types";
+import { useAuth } from "../context/AuthContext";
+import { ErrorMessage } from "./ui/ErrorMessage";
 
 interface AuthPanelProps {
     onClose: () => void;
@@ -12,6 +14,7 @@ type UserType = "customer" | "store";
 type View = "welcome" | "form";
 
 export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
+    const { login, setGuestMode } = useAuth();
     const [view, setView] = useState<View>("welcome");
     const [mode, setMode] = useState<AuthMode>("signin");
     const [userType, setUserType] = useState<UserType>("customer");
@@ -20,42 +23,38 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
     const [name, setName] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
     const isSignIn = mode === "signin";
 
     const goToForm = (type: UserType) => {
         setUserType(type);
         setMode("signin");
         setView("form");
+        setErrorMsg("");
+    };
+
+    const handleGuestClick = () => {
+        setGuestMode();
+        onGuest();
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-
-        const targetRedirect = userType === "store" ? "owner" : "customer";
+        setErrorMsg("");
 
         try {
-            const response = await fetch("http://localhost:8000/api/auth/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    email: email || (userType === "store" ? "owner@shopscout.app" : "drake.delosreyes@shopscout.app"),
-                    password: password || "password123",
-                    user_type: userType,
-                }),
+            const target = await login({
+                email: email || (userType === "store" ? "owner@shopscout.app" : "drake.delosreyes@shopscout.app"),
+                password: password || "password123",
+                user_type: userType,
             });
-
-            if (response.ok) {
-                const data = await response.json();
-                const target = data.redirect_target === "owner" ? "owner" : "customer";
+            if (target === "owner" || target === "customer") {
                 onAuth(target);
-            } else {
-                onAuth(targetRedirect);
             }
-        } catch {
-            onAuth(targetRedirect);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Failed to authenticate";
+            setErrorMsg(msg);
         } finally {
             setLoading(false);
         }
@@ -63,8 +62,7 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
 
     return (
         <div
-            style={{ zIndex: 1100 }}
-            className="absolute inset-0 flex justify-end bg-black/30"
+            className="fixed inset-0 z-50 flex justify-end bg-black/30"
             onClick={onClose}
         >
             <div
@@ -94,7 +92,7 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
 
                         <div className="mt-8 flex flex-col gap-3">
                             <button
-                                onClick={onGuest}
+                                onClick={handleGuestClick}
                                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-[#D7DCE3] py-2.5 text-sm font-medium text-[#5B6472] hover:bg-[#F7F8FA]"
                             >
                                 Continue as Guest
@@ -160,6 +158,8 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                                     ? "Manage your store profile and offers."
                                     : "Set up your store profile to start listing offers."}
                         </p>
+
+                        {errorMsg && <ErrorMessage message={errorMsg} className="mt-4" />}
 
                         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
                             {!isSignIn && (

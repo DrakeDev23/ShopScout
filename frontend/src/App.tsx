@@ -1,24 +1,26 @@
-import { useState } from "react";
 import Shopscoutmap from "./components/ShopScoutMap";
 import StoreOwnerDashboard from "./components/Storeownerdashboard";
 import CustomerDashboard from "./components/customer-dashboard/CustomerDashboard";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
-type AppView = "map" | "customer" | "owner";
-
-export default function App() {
-  const [view, setView] = useState<AppView>("map");
-
-  const handleLogout = () => {
-    setView("map");
-  };
+function MainContent() {
+  const { view, setView, logout } = useAuth();
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-[#F7F8FA] font-sans">
       <div className="h-full w-full">
         {view === "map" && <Shopscoutmap onSelectView={(v) => setView(v)} />}
-        {view === "customer" && <CustomerDashboard onLogout={handleLogout} />}
-        {view === "owner" && <StoreOwnerDashboard onLogout={handleLogout} />}
+        {view === "customer" && <CustomerDashboard onLogout={logout} />}
+        {view === "owner" && <StoreOwnerDashboard onLogout={logout} />}
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainContent />
+    </AuthProvider>
   );
 }

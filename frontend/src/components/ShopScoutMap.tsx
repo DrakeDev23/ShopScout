@@ -4,21 +4,23 @@ import { MapContainer, TileLayer, Marker, Polyline } from "react-leaflet";
 import { useState, useEffect, useRef } from "react";
 import { Search, X, Footprints, LogOut, ChevronRight } from "lucide-react";
 
-import type { AuthState, Shop, LatLng } from "./types";
+import type { Shop, LatLng } from "./types";
 import { SHOPS, CEBU_CENTER } from "./data";
 import { MapMarkers } from "./MapMarkers";
 import { FitBounds, LocateControl } from "./MapHelpers";
 import { ShopCard } from "./ShopCard";
 import { AuthPanel } from "./login";
+import { useAuth } from "../context/AuthContext";
 
 interface ShopScoutMapProps {
     onSelectView?: (view: "customer" | "owner") => void;
 }
 
 export default function ShopScoutMap({ onSelectView }: ShopScoutMapProps = {}) {
+    const { user, isGuest, logout, setView } = useAuth();
     const [query, setQuery] = useState("");
-    const [auth, setAuth] = useState<AuthState>(null);
-    const [panelOpen, setPanelOpen] = useState(true);
+    const [debouncedQuery, setDebouncedQuery] = useState("");
+    const [panelOpen, setPanelOpen] = useState(false);
     const [selected, setSelected] = useState<number | null>(null);
     const [saved, setSaved] = useState<Set<number>>(new Set());
     const [toast, setToast] = useState("");
@@ -26,12 +28,18 @@ export default function ShopScoutMap({ onSelectView }: ShopScoutMapProps = {}) {
     const [route, setRoute] = useState<LatLng[] | null>(null);
     const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const isGuest = auth === "guest";
-    const hasQuery = query.trim().length > 0;
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedQuery(query);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [query]);
+
+    const hasQuery = debouncedQuery.trim().length > 0;
 
     const filtered = hasQuery
         ? SHOPS.filter((s) => {
-            const q = query.toLowerCase();
+            const q = debouncedQuery.toLowerCase();
             return s.name.toLowerCase().includes(q) || s.brand.toLowerCase().includes(q);
         })
         : [];
@@ -108,9 +116,9 @@ export default function ShopScoutMap({ onSelectView }: ShopScoutMapProps = {}) {
                     )}
                 </div>
 
-                {auth ? (
+                {user || isGuest ? (
                     <button
-                        onClick={() => isGuest ? setPanelOpen(true) : setAuth(null)}
+                        onClick={() => isGuest ? setPanelOpen(true) : logout()}
                         className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-[#E4E7EC] bg-white px-3 shadow-sm hover:bg-[#F7F8FA]"
                     >
                         {isGuest ? (
@@ -120,7 +128,9 @@ export default function ShopScoutMap({ onSelectView }: ShopScoutMapProps = {}) {
                             </>
                         ) : (
                             <>
-                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#EAF6F3] text-[11px] font-medium text-[#158F76]">JD</div>
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#EAF6F3] text-[11px] font-medium text-[#158F76]">
+                                  {user?.name ? user.name.split(" ").map(n => n[0]).join("") : "JD"}
+                                </div>
                                 <LogOut size={14} className="text-[#9CA3AF]" />
                             </>
                         )}
@@ -216,10 +226,10 @@ export default function ShopScoutMap({ onSelectView }: ShopScoutMapProps = {}) {
             {panelOpen && (
                 <AuthPanel
                     onClose={() => setPanelOpen(false)}
-                    onGuest={() => { setAuth("guest"); setPanelOpen(false); }}
+                    onGuest={() => setPanelOpen(false)}
                     onAuth={(target) => {
-                        setAuth("user");
                         setPanelOpen(false);
+                        setView(target);
                         if (onSelectView) {
                             onSelectView(target);
                         }

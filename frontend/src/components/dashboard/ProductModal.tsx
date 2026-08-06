@@ -14,7 +14,7 @@ export function ProductModal({ product, isNew, onChange, onCancel, onSave }: Pro
     const valid = product.name.trim().length > 0;
 
     return (
-        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/30" onClick={onCancel}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onCancel}>
             <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl">
                 <div className="flex items-center justify-between">
                     <h3 className="text-base font-semibold">{isNew ? "Add product" : "Edit product"}</h3>
