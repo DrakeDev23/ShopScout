@@ -82,7 +82,7 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
 
     return (
         <div
-            className={`fixed inset-0 z-[2100] flex justify-end bg-black/30 pointer-events-auto transition-opacity duration-250 ease-out ${isVisible && !isClosing ? "opacity-100" : "opacity-0"
+            className={`fixed inset-0 z-2100 flex justify-end bg-black/30 pointer-events-auto transition-opacity duration-250 ease-out ${isVisible && !isClosing ? "opacity-100" : "opacity-0"
                 }`}
             onClick={(e) => {
                 e.stopPropagation();
