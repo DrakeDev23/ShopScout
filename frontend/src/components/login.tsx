@@ -62,11 +62,18 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex justify-end bg-black/30"
-            onClick={onClose}
+            className="fixed inset-0 z-2100 flex justify-end bg-black/30 pointer-events-auto"
+            onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
         >
             <div
                 onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                onPointerDown={(e) => e.stopPropagation()}
                 className="flex h-full w-full max-w-sm flex-col bg-white px-8 py-8 shadow-2xl text-left [word-spacing:normal]"
             >
                 <div className="flex items-center justify-between">
