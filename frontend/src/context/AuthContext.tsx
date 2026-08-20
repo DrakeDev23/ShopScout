@@ -41,8 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ? ((user.unsafeMetadata?.role as AuthRole) ?? null)
     : null;
 
-  // Guard against stale view: if view says customer/owner but there's
-  // no real signed-in user (and not guest), bounce to map.
   useEffect(() => {
     if (!isLoaded) return;
     const isAuthenticated = !!user || isGuest;
@@ -51,7 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [view, user, isGuest, isLoaded]);
 
-  // once signed in, route to the right dashboard based on role set at sign-up
   useEffect(() => {
     if (!isLoaded || !user) return;
     const metaRole = user.unsafeMetadata?.role as AuthRole;
