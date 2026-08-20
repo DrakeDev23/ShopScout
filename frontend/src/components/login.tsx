@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { X, Mail, Lock, Eye, EyeOff, User, Footprints, Store, Loader2 } from "lucide-react";
+import { useSignIn, useSignUp } from "@clerk/clerk-react";
 import type { AuthMode } from "./types";
 import { useAuth } from "../context/AuthContext";
 import { ErrorMessage } from "./ui/ErrorMessage";
@@ -11,18 +12,22 @@ interface AuthPanelProps {
 }
 
 type UserType = "customer" | "store";
-type View = "welcome" | "form";
+type View = "welcome" | "form" | "verify";
 
 const TRANSITION_MS = 250;
 
 export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
-    const { login, setGuestMode } = useAuth();
+    const { setGuestMode } = useAuth();
+    const { isLoaded: signInLoaded, signIn, setActive: setActiveSignIn } = useSignIn();
+    const { isLoaded: signUpLoaded, signUp, setActive: setActiveSignUp } = useSignUp();
+
     const [view, setView] = useState<View>("welcome");
     const [mode, setMode] = useState<AuthMode>("signin");
     const [userType, setUserType] = useState<UserType>("customer");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [name, setName] = useState("");
+    const [code, setCode] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
@@ -55,19 +60,66 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
         onGuest();
     };
 
+    const targetView = (): "customer" | "owner" => (userType === "store" ? "owner" : "customer");
+
+    const handleSignIn = async () => {
+        if (!signInLoaded) return;
+        const result = await signIn.create({ identifier: email, password });
+        if (result.status === "complete") {
+            await setActiveSignIn({ session: result.createdSessionId });
+            handleClose();
+            onAuth(targetView());
+        } else {
+            setErrorMsg("Additional verification required. Please try again.");
+        }
+    };
+
+    const handleSignUp = async () => {
+        if (!signUpLoaded) return;
+        await signUp.create({
+            emailAddress: email,
+            password,
+            unsafeMetadata: {
+                role: targetView(),
+                name,
+            },
+        });
+        await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+        setView("verify");
+    };
+
+    const handleVerify = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!signUpLoaded) return;
+        setLoading(true);
+        setErrorMsg("");
+        try {
+            const result = await signUp.attemptEmailAddressVerification({ code });
+            if (result.status === "complete") {
+                await setActiveSignUp({ session: result.createdSessionId });
+                handleClose();
+                onAuth(targetView());
+            } else {
+                setErrorMsg("Invalid or expired code.");
+            }
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Verification failed";
+            setErrorMsg(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setErrorMsg("");
 
         try {
-            const target = await login({
-                email: email || (userType === "store" ? "owner@shopscout.app" : "drake.delosreyes@shopscout.app"),
-                password: password || "password123",
-                user_type: userType,
-            });
-            if (target === "owner" || target === "customer") {
-                onAuth(target);
+            if (isSignIn) {
+                await handleSignIn();
+            } else {
+                await handleSignUp();
             }
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : "Failed to authenticate";
@@ -107,7 +159,7 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                     <button onClick={handleClose} className="text-[#9CA3AF] hover:text-[#5B6472]"><X size={18} /></button>
                 </div>
 
-                {view === "welcome" ? (
+                {view === "welcome" && (
                     <div className="flex flex-1 flex-col">
                         <h1 className="mt-8 text-2xl font-semibold text-[#161A23]">
                             Welcome to ShopScout
@@ -151,7 +203,9 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                             </button>
                         </div>
                     </div>
-                ) : (
+                )}
+
+                {view === "form" && (
                     <>
                         <button
                             onClick={() => setView("welcome")}
@@ -229,6 +283,36 @@ export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
                                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#E2542D] py-2.5 text-sm font-medium text-white hover:bg-[#c4471f] disabled:opacity-50"
                             >
                                 {loading ? <Loader2 size={16} className="animate-spin" /> : isSignIn ? "Sign in" : "Create account"}
+                            </button>
+                        </form>
+                    </>
+                )}
+
+                {view === "verify" && (
+                    <>
+                        <h1 className="mt-8 text-2xl font-semibold text-[#161A23]">
+                            Check your email
+                        </h1>
+                        <p className="mt-2 text-sm leading-relaxed text-[#5B6472]">
+                            We sent a verification code to {email}.
+                        </p>
+
+                        {errorMsg && <ErrorMessage message={errorMsg} className="mt-4" />}
+
+                        <form onSubmit={handleVerify} className="mt-6 space-y-4">
+                            <input
+                                type="text"
+                                value={code}
+                                onChange={(e) => setCode(e.target.value)}
+                                placeholder="Verification code"
+                                className="w-full rounded-lg border border-[#D7DCE3] py-2.5 px-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#E2542D]"
+                            />
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#E2542D] py-2.5 text-sm font-medium text-white hover:bg-[#c4471f] disabled:opacity-50"
+                            >
+                                {loading ? <Loader2 size={16} className="animate-spin" /> : "Verify"}
                             </button>
                         </form>
                     </>
