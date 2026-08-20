@@ -1,17 +1,18 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { authApi, type LoginPayload, type UserProfileData } from "../api/auth";
+import { useUser, useClerk, useAuth as useClerkAuth } from "@clerk/clerk-react";
 
 export type AuthRole = "customer" | "owner" | "guest" | null;
 export type AppView = "map" | "customer" | "owner";
+type ClerkUser = ReturnType<typeof useUser>["user"];
 
 interface AuthContextType {
-  user: UserProfileData | null;
+  user: ClerkUser;
   role: AuthRole;
   view: AppView;
   isGuest: boolean;
-  token: string | null;
+  isLoaded: boolean;
   setView: (view: AppView) => void;
-  login: (payload: LoginPayload) => Promise<AppView>;
+  getToken: () => Promise<string | null>;
   setGuestMode: () => void;
   logout: () => void;
 }
@@ -19,19 +20,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserProfileData | null>(() => {
-    const savedUser = localStorage.getItem("shopscout_user");
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const { user, isLoaded } = useUser();
+  const { getToken: clerkGetToken } = useClerkAuth();
+  const { signOut } = useClerk();
 
-  const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem("shopscout_token");
-  });
-
-  const [role, setRole] = useState<AuthRole>(() => {
-    const savedRole = localStorage.getItem("shopscout_role") as AuthRole;
-    return savedRole || null;
-  });
+  const [isGuest, setIsGuest] = useState(false);
 
   const [view, setView] = useState<AppView>(() => {
     const savedView = localStorage.getItem("shopscout_view") as AppView;
@@ -39,78 +32,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem("shopscout_user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("shopscout_user");
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem("shopscout_token", token);
-    } else {
-      localStorage.removeItem("shopscout_token");
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (role) {
-      localStorage.setItem("shopscout_role", role);
-    } else {
-      localStorage.removeItem("shopscout_role");
-    }
-  }, [role]);
-
-  useEffect(() => {
     localStorage.setItem("shopscout_view", view);
   }, [view]);
 
-  const login = async (payload: LoginPayload): Promise<AppView> => {
-    try {
-      const res = await authApi.login(payload);
-      const targetView: AppView = res.redirect_target === "owner" ? "owner" : "customer";
+  const role: AuthRole = isGuest
+    ? "guest"
+    : user
+    ? ((user.unsafeMetadata?.role as AuthRole) ?? null)
+    : null;
 
-      setUser(res.user);
-      setRole(targetView === "owner" ? "owner" : "customer");
-      if (res.token) {
-        setToken(res.token);
-      } else {
-        setToken("mock_jwt_token");
-      }
-      setView(targetView);
-      return targetView;
-    } catch (err) {
-      const targetView: AppView = payload.user_type === "store" ? "owner" : "customer";
-      const fallbackUser: UserProfileData = {
-        name: payload.user_type === "store" ? "Store Owner" : "Drake Delos Reyes",
-        email: payload.email || "user@shopscout.app",
-        role: payload.user_type === "store" ? "store_owner" : "customer",
-      };
-      setUser(fallbackUser);
-      setRole(targetView === "owner" ? "owner" : "customer");
-      setToken("fallback_mock_token");
-      setView(targetView);
-      return targetView;
+  // Guard against stale view: if view says customer/owner but there's
+  // no real signed-in user (and not guest), bounce to map.
+  useEffect(() => {
+    if (!isLoaded) return;
+    const isAuthenticated = !!user || isGuest;
+    if (view !== "map" && !isAuthenticated) {
+      setView("map");
     }
-  };
+  }, [view, user, isGuest, isLoaded]);
+
+  // once signed in, route to the right dashboard based on role set at sign-up
+  useEffect(() => {
+    if (!isLoaded || !user) return;
+    const metaRole = user.unsafeMetadata?.role as AuthRole;
+    if (metaRole === "owner" || metaRole === "customer") {
+      setView(metaRole);
+    }
+  }, [isLoaded, user]);
 
   const setGuestMode = () => {
-    setRole("guest");
-    setUser(null);
-    setToken(null);
+    setIsGuest(true);
     setView("map");
   };
 
   const logout = () => {
-    setUser(null);
-    setRole(null);
-    setToken(null);
+    setIsGuest(false);
     setView("map");
-    localStorage.removeItem("shopscout_user");
-    localStorage.removeItem("shopscout_token");
-    localStorage.removeItem("shopscout_role");
-    localStorage.removeItem("shopscout_view");
+    signOut();
+  };
+
+  const getToken = async () => {
+    if (isGuest) return null;
+    return clerkGetToken();
   };
 
   return (
@@ -119,10 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         role,
         view,
-        isGuest: role === "guest",
-        token,
+        isGuest,
+        isLoaded,
         setView,
-        login,
+        getToken,
         setGuestMode,
         logout,
       }}

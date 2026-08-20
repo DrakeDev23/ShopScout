@@ -7,10 +7,9 @@ export interface ApiError {
 
 export async function apiClient<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  token?: string | null
 ): Promise<T> {
-  const token = localStorage.getItem("shopscout_token");
-
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
