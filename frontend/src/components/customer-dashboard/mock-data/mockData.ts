@@ -12,7 +12,7 @@ export const initialLikedStores: LikedStore[] = [
   {
     id: "store-1",
     name: "Sneaker Hub Cebu",
-    brand: "Nike & Adidas",
+    brand: "Nike & puma",
     category: "Footwear & Apparel",
     rating: 4.8,
     reviewsCount: 142,
