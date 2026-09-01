@@ -15,7 +15,7 @@ type UserType = "customer" | "store";
 type View = "welcome" | "form" | "verify";
 
 const TRANSITION_MS = 250;
-
+{/*d */}
 export function AuthPanel({ onClose, onGuest, onAuth }: AuthPanelProps) {
     const { setGuestMode } = useAuth();
     const { isLoaded: signInLoaded, signIn, setActive: setActiveSignIn } = useSignIn();
