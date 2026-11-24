@@ -14,24 +14,29 @@ export function FitBounds({ points }: { points: LatLng[] }) {
     return null;
 }
 
-export function LocateControl({ onLocate }: { onLocate: (lat: number, lng: number) => void }) {
+export function FlyToLocation({ target }: { target: LatLng | null }) {
     const map = useMap();
 
-    function locate() {
-        map.locate({ setView: true, maxZoom: 16 });
-        map.once("locationfound", (e) => {
-            onLocate(e.latlng.lat, e.latlng.lng);
-        });
-    }
+    useEffect(() => {
+        if (target) {
+            map.flyTo(target, 16, { animate: true, duration: 1.2 });
+        }
+    }, [target, map]);
 
+    return null;
+}
+
+
+export function LocateControl({ onLocate }: { onLocate: () => void }) {
     return (
         <button
-            onClick={locate}
-            title="Use my location"
+            type="button"
+            onClick={onLocate}
+            title="Point to my exact location"
             style={{ zIndex: 900 }}
-            className="absolute bottom-24 right-3 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md hover:bg-[#F7F8FA] border border-[#E4E7EC]"
+            className="absolute bottom-24 right-3 flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-lg hover:bg-[#F7F8FA] border border-[#E4E7EC] text-[#E2542D] transition-all hover:scale-105 active:scale-95"
         >
-            <LocateFixed size={18} className="text-[#E2542D]" />
+            <LocateFixed size={20} />
         </button>
     );
 }
