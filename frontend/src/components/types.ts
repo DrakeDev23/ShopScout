@@ -9,6 +9,7 @@ export interface Shop {
     distance: string;
     stock: string;
     address: string;
+    tags?: string[];
 }
 
 export type AuthState = "guest" | "user" | null;

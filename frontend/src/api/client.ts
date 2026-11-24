@@ -26,14 +26,11 @@ export async function apiClient<T>(
 
   if (!response.ok) {
     let errorMessage = `Request failed with status ${response.status}`;
-    try {
-      const errData = await response.json();
-      if (errData.detail) {
-        errorMessage = typeof errData.detail === "string" ? errData.detail : JSON.stringify(errData.detail);
-      } else if (errData.message) {
-        errorMessage = errData.message;
-      }
-    } catch {
+    const errData = await response.json().catch(() => null);
+    if (errData?.detail) {
+      errorMessage = typeof errData.detail === "string" ? errData.detail : JSON.stringify(errData.detail);
+    } else if (errData?.message) {
+      errorMessage = errData.message;
     }
     const error: ApiError = new Error(errorMessage) as ApiError;
     error.status = response.status;

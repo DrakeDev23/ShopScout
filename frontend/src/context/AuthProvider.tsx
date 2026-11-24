@@ -1,23 +1,6 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useUser, useClerk, useAuth as useClerkAuth } from "@clerk/clerk-react";
-
-export type AuthRole = "customer" | "owner" | "guest" | null;
-export type AppView = "map" | "customer" | "owner";
-type ClerkUser = ReturnType<typeof useUser>["user"];
-
-interface AuthContextType {
-  user: ClerkUser;
-  role: AuthRole;
-  view: AppView;
-  isGuest: boolean;
-  isLoaded: boolean;
-  setView: (view: AppView) => void;
-  getToken: () => Promise<string | null>;
-  setGuestMode: () => void;
-  logout: () => void;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext, type AuthRole, type AppView } from "./AuthContext";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { user, isLoaded } = useUser();
@@ -45,7 +28,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isLoaded) return;
     const isAuthenticated = !!user || isGuest;
     if (view !== "map" && !isAuthenticated) {
-      setView("map");
+      const timer = setTimeout(() => setView("map"), 0);
+      return () => clearTimeout(timer);
     }
   }, [view, user, isGuest, isLoaded]);
 
@@ -53,7 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isLoaded || !user) return;
     const metaRole = user.unsafeMetadata?.role as AuthRole;
     if (metaRole === "owner" || metaRole === "customer") {
-      setView(metaRole);
+      const timer = setTimeout(() => setView(metaRole), 0);
+      return () => clearTimeout(timer);
     }
   }, [isLoaded, user]);
 
@@ -90,12 +75,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
 }

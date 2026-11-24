@@ -1,19 +1,52 @@
-import { X, Star, Navigation2, Heart, MessageSquare } from "lucide-react";
+import { X, Star, Heart, MessageSquare, Car, Motorbike, Bike, Footprints, Loader2, MapPin, PinOff } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { GuestLockNotice } from "./GuestLockNotice";
-import type { Shop } from "./types";
+import type { Shop, LatLng } from "./types";
+import {
+    TRAVEL_MODES,
+    formatDistance,
+    formatDuration,
+    haversineMeters,
+    type RoutesByMode,
+    type TravelMode,
+} from "./routing";
+
+const MODE_META: Record<TravelMode, { label: string; Icon: LucideIcon }> = {
+    car: { label: "Car", Icon: Car },
+    motorcycle: { label: "Motor", Icon: Motorbike },
+    bike: { label: "Bike", Icon: Bike },
+    walk: { label: "Walk", Icon: Footprints },
+};
 
 interface ShopCardProps {
     shop: Shop;
     isGuest: boolean;
     saved: boolean;
     hasUserPos: boolean;
-    onDirections: () => void;
+    userPos: LatLng | null;
+    routes: RoutesByMode | null;
+    routeLoading: boolean;
+    travelMode: TravelMode;
+    isPinned?: boolean;
+    onTravelModeChange: (mode: TravelMode) => void;
+    onTogglePin: () => void;
     onToggleSave: (id: number) => void;
     onFeedback: () => void;
     onClose: () => void;
 }
 
-export function ShopCard({ shop, isGuest, saved, hasUserPos, onDirections, onToggleSave, onFeedback, onClose }: ShopCardProps) {
+export function ShopCard({
+    shop, isGuest, saved, hasUserPos, userPos, routes, routeLoading, travelMode,
+    isPinned = false,
+    onTravelModeChange, onTogglePin, onToggleSave, onFeedback, onClose,
+}: ShopCardProps) {
+    const activeRoute = routes ? routes[travelMode] : null;
+    const distanceLabel = activeRoute
+        ? `${formatDistance(activeRoute.distance)} away · ${formatDuration(activeRoute.duration)} by ${MODE_META[travelMode].label.toLowerCase()}`
+        : userPos
+            ? `${formatDistance(haversineMeters(userPos, [shop.lat, shop.lng]))} away`
+            : `${shop.distance} away`;
+
     return (
         <div
             style={{ zIndex: 950 }}
@@ -23,7 +56,7 @@ export function ShopCard({ shop, isGuest, saved, hasUserPos, onDirections, onTog
                 <X size={16} />
             </button>
 
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#E2542D]">{shop.distance} away</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#E2542D]">{distanceLabel}</p>
             <h3 className="mt-0.5 text-lg font-semibold text-[#161A23]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                 {shop.name}
             </h3>
@@ -38,17 +71,71 @@ export function ShopCard({ shop, isGuest, saved, hasUserPos, onDirections, onTog
                 <span className="font-mono">{shop.stock}</span>
             </div>
 
+            {hasUserPos && (
+                <div className="mt-3">
+                    <div className="grid grid-cols-4 gap-1.5">
+                        {TRAVEL_MODES.map((mode) => {
+                            const { label, Icon } = MODE_META[mode];
+                            const r = routes?.[mode];
+                            const active = mode === travelMode;
+                            return (
+                                <button
+                                    key={mode}
+                                    type="button"
+                                    onClick={() => onTravelModeChange(mode)}
+                                    title={r?.estimated ? "Estimated (routing service unavailable)" : label}
+                                    className={`flex flex-col items-center gap-0.5 rounded-lg border px-1 py-1.5 text-[10px] transition-colors ${active
+                                        ? "border-[#E2542D] bg-[#FDF0EC] text-[#161A23]"
+                                        : "border-[#E4E7EC] text-[#5B6472] hover:bg-[#F7F8FA]"
+                                        }`}
+                                >
+                                    <Icon size={15} className={active ? "text-[#E2542D]" : ""} />
+                                    {routeLoading || !r ? (
+                                        <Loader2 size={12} className="my-0.5 animate-spin text-[#9CA3AF]" />
+                                    ) : (
+                                        <>
+                                            <span className="font-semibold leading-tight">
+                                                {r.estimated ? "~" : ""}{formatDuration(r.duration)}
+                                            </span>
+                                            <span className="leading-tight text-[#9CA3AF]">{formatDistance(r.distance)}</span>
+                                        </>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    {activeRoute?.estimated && (
+                        <p className="mt-1 text-[10px] text-[#9CA3AF]">Routing service unavailable. Showing straight-line estimates.</p>
+                    )}
+                    {travelMode === "motorcycle" && activeRoute && !activeRoute.estimated && (
+                        <p className="mt-1 text-[10px] text-[#9CA3AF]">Motor time is estimated from the car route.</p>
+                    )}
+                </div>
+            )}
+
             <div className="mt-3 flex gap-2">
                 <button
-                    onClick={onDirections}
+                    type="button"
+                    onClick={onTogglePin}
                     disabled={!hasUserPos}
-                    title={!hasUserPos ? "Allow location to get directions" : ""}
-                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium transition-colors ${hasUserPos
-                        ? "bg-[#161A23] text-white hover:bg-black"
-                        : "cursor-not-allowed bg-[#E4E7EC] text-[#9CA3AF]"
-                        }`}
+                    title={!hasUserPos ? "Allow location to pin destination" : isPinned ? "Unpin this destination" : "Pin this destination to map"}
+                    className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-all ${
+                        !hasUserPos
+                            ? "cursor-not-allowed bg-[#E4E7EC] text-[#9CA3AF]"
+                            : isPinned
+                            ? "bg-[#E2542D] text-white hover:bg-[#d04622] shadow-sm"
+                            : "bg-[#161A23] text-white hover:bg-black shadow-sm"
+                    }`}
                 >
-                    <Navigation2 size={13} /> Directions
+                    {isPinned ? (
+                        <>
+                            <PinOff size={14} /> Pinned (Unpin)
+                        </>
+                    ) : (
+                        <>
+                            <MapPin size={14} /> Pin this Location
+                        </>
+                    )}
                 </button>
                 <button
                     onClick={() => isGuest && onFeedback()}

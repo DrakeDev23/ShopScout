@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+    cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+button.cursor-not-allowed {
+    cursor: not-allowed;
+}
